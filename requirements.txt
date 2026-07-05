@@ -1,0 +1,22 @@
+# --- Geospatial and Coordinate Transformation ---
+rioxarray
+owslib
+pyproj
+contextily
+xarray
+netcdf4
+
+# --- Data Manipulation and Plotting ---
+numpy
+pandas
+matplotlib
+seaborn
+
+# --- Machine Learning and Clustering Optimization ---
+scikit-learn
+optuna
+yellowbrick
+scipy
+
+# --- Crop Growth Modeling ---
+aquacrop
