@@ -13,7 +13,8 @@ def plot_intercluster_distances(X_final_preprocessed, n_clusters=4):
     # Instantiate the visualizer with our optimal K settings
     visualizer = InterclusterDistance(
         KMeans(n_clusters=n_clusters, init='k-means++', n_init=10, max_iter=1000, random_state=42),
-        colors='yellowbrick'
+        colors='yellowbrick',
+        random_state = 42
     )
 
     # Fit directly on the full preprocessed matrix
