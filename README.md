@@ -114,7 +114,7 @@ Modello basato sull'assunto che i dati siano generati da una mistura di distribu
   * `n_init`: 10
 * **Output Unici:** Oltre alle labels rigide, estrae le probabilità di appartenenza fondamentali per mappare le **zone di transizione** sfumate tra diversi tipi di suolo.
 
-### 5. DBSCAN 
+### 4. DBSCAN 
 Raggruppa i punti in base alla densità spaziale, isolando i campioni che si trovano in aree a bassa densità.
 * **Iperparametri:**
   * `eps`: 1.0 (raggio del vicinato individuato tramite NearestNeighbors)
@@ -122,7 +122,7 @@ Raggruppa i punti in base alla densità spaziale, isolando i campioni che si tro
   * `n_jobs`: -1 (parallelizzazione completa su tutti i core della CPU)
 * **Output Unici:** Identifica automaticamente il rumore di fondo. I punti non classificati vengono contrassegnati con l'etichetta `-1`.
 
-### 6. HDBSCAN 
+### 5. HDBSCAN 
 Estensione di DBSCAN che converte l'algoritmo in un algoritmo gerarchico per trovare cluster di densità variabile, eliminando la necessità di impostare un raggio `eps` globale e rigido.
 #### 🎛️ Ottimizzazione Iperparametrica con Optuna (TPE)
 Per evitare un tuning manuale inefficiente, la ricerca dei parametri è stata automatizzata tramite un processo Bayesiano guidato dall'algoritmo **TPE (Tree-Structured Parzen Estimator)** di Optuna. 
