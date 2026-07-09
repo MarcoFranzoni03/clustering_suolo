@@ -10,9 +10,8 @@ Per eseguire questo progetto in locale, è necessario configurare l'ambiente Pyt
 
 1. Clona la repository:
 ```bash
-git clone 
-cd clustering-del-suolo
-
+git clone https://github.com/MarcoFranzoni03/clustering_suolo
+```
 2. Crea e attiva un ambiente virtuale per isolare le dipendenze:
 
 # Su Windows:
@@ -29,8 +28,23 @@ pip install -r requirements.txt
 
 ---
 
-## 🧹 Data Preprocessing
+## 📁 Struttura del Progetto
 
+Il progetto è strutturato in modo modulare e sequenziale, seguendo passo dopo passo l'intera pipeline di data science, dal recupero dei dati grezzi fino alla simulazione agronomica:
+
+```text
+├── data/                            # Dati del suolo (grezzi e processati)
+├── meteo_data/                      # Dati meteorologici formattati per AquaCrop
+└── src/                             # Codice sorgente Python (.py e .ipynb)
+    ├── 0_download/                  # Fase 0: Script per il download dei dati grezzi
+    ├── 1_load/                      # Fase 1: Caricamento e parsing dei dataset
+    ├── 2_data_analysis/             # Fase 2: Analisi esplorativa dei dati (EDA)
+    ├── 3_data_preprocessing_pipeline/ # Fase 3: Pipeline di pulizia, rimozione outlier e PCA
+    ├── 4_clustering/                # Fase 4: Algoritmi di clustering (K-Means, Bisecting K-Means, HDBSCAN, ecc.)
+    ├── 5_aquacrop/                  # Fase 5: Elaborazione dati e integrazione con AquaCrop
+    └── utils_plotting/              # Script e moduli per la generazione di grafici e mappe
+```
+## 🧹 Data Preprocessing
 Il successo del clustering dipende fortemente dalla qualità della pipeline di pre-elaborazione. I dati grezzi del dataset sono stati trattati seguendo questi step sequenziali:
 
 ### 1. Gestione dei Valori Duplicati
@@ -128,7 +142,6 @@ $$\text{persistence}(p) = \lambda_{death}(p) - \lambda_{birth}(C)$$
   * `n_jobs`: -1
 
 ## 🎨 Visualizzazione e Interpretazione dei Cluster
-
 Per validare i risultati sia dal punto di vista statistico che agronomico, il progetto genera una suite di visualizzazioni avanzate. 
 Di seguito sono descritti i grafici principali prodotti e il loro significato analitico:
 
@@ -155,3 +168,38 @@ Di seguito sono descritti i grafici principali prodotti e il loro significato an
 ### 6. Grafico della Silhouette (Silhouette Plot)
 * **Descrizione:** Un grafico che mostra lo spessore e la lunghezza del coefficiente di silhouette per ogni singolo punto, raggruppato per cluster, confrontato con la linea della media globale.
 * **Obiettivo:** Validazione matematica della qualità del clustering. Consente di vedere se ci sono punti assegnati erroneamente (valori negativi) o se un cluster è troppo debole e disomogeneo al suo interno (valori sotto la media).
+
+## 🌾 Validazione ed Elaborazione Dati per AquaCrop
+
+Questa fase si concentra sulla preparazione, pulizia e validazione del dataset agrometeo necessario per alimentare correttamente il software di simulazione colturale **AquaCrop**. I dati provenienti dalle stazioni meteorologiche locali sono stati integrati e sincronizzati con i dati globali rianalizzati.
+
+---
+
+### 🧹 Data Processing & Allineamento Temporale
+
+* **Ristrutturazione delle Variabili:** Uniformazione del dataset tramite la rinominazione delle feature con la funzione `rename()`.
+* **Rimozione della Temperatura Media (`t_mean`):** La colonna è stata rimossa dal dataset poiché rappresenta un dato puramente derivato dalla media aritmetica tra temperatura minima e massima. AquaCrop calcola questo valore in modo nativo e autonomo.
+* **Verifica della Continuità Temporale:** È stata calcolata la serie temporale ideale per il periodo analizzato e confrontata con le date effettivamente presenti nel dataset tramite la funzione `difference()`. Il controllo ha confermato l'**assenza di giorni mancanti**.
+* **Sincronizzazione Locale-ERA5:** I dati grezzi delle stazioni meteo locali sono stati sottoposti a sincronizzazione temporale per garantirne il perfetto allineamento con il dataset globale **ERA5**, condizione imprescindibile per l'accuratezza dei modelli di simulazione.
+* **Normalizzazione dei Metadati:** Pulizia delle stringhe dei nomi delle stazioni meteorologiche tramite `strip()` (rimozione di spazi bianchi superflui) e controllo dell'univocità tramite `unique()`.
+* **Allineamento Geo-Spaziale:** I dataframe delle precipitazioni (piogge) e le relative coordinate geografiche sono stati allineati specularmente sia a livello di record di dati sia a livello di corrispondenza dei nomi delle stazioni.
+
+---
+
+### 🩹 Gestione Avanzata dei Valori Mancanti (NaN)
+
+Le interruzioni di servizio o i malfunzionamenti dei sensori sul campo introducono lacune nei dati che richiedono una strategia di ripristino robusta:
+
+1. **Soglia di Tolleranza Critica (Drop 40%):** I record che presentavano una percentuale di valori mancanti **maggiore o uguale al 40%** sono stati definitivamente rimossi. Una ricostruzione su volumi di dati così degradati risulterebbe statisticamente inattendibile, introducendo bias pesanti nella simulazione.
+2. **Stima Spaziale e KNN Imputation:** Per mappare il meteo nei punti geografici privi di una stazione fisica di rilevamento, ci si è basati sul principio di prossimità spaziale sfruttando le stazioni limitrofe. I rimanenti valori NaN sono stati gestiti tramite **`KNNImputer(n_neighbors=3, weights='uniform')`**.
+
+> **Nota Metodologica:** La scelta del KNNImputer (basato sui 3 vicini più prossimi nello spazio) è cruciale in ambito meteorologico. Se un sensore si guasta durante un forte evento temporalesco, imputare il dato mancante usando la media annuale o mensile appiattirebbe il picco, rendendo la simulazione di AquaCrop irrealistica. Il KNN preserva il contesto meteo locale di quel preciso giorno.
+
+---
+
+### 📊 Analisi degli Outlier e Strategia di Validazione dei Cluster
+
+Per identificare anomalie residue e verificare la bontà geochimica/meteo del clustering prima dell'input in AquaCrop, sono stati generati degli **Scatter Plot** mirati. La strategia di validazione ha previsto il confronto incrociato di specifici profili:
+
+* **Validazione Intra-Cluster (Consistenza):** Sono stati selezionati e confrontati graficamente due punti appartenenti allo stesso gruppo: il **Medoide** (il punto più rappresentativo e centrale) e un secondo campione casuale del medesimo cluster. Il grafico ha confermato l'elevata similarità e coerenza dei comportamenti agronomici all'interno dello stesso gruppo.
+* **Validazione Inter-Cluster (Separazione):** È stato eseguito un confronto diretto tra due punti estratti da **due cluster differenti**. La netta divergenza spaziale e temporale dei trend ha validato matematicamente la capacità dei modelli di separare il territorio in macro-aree dalle caratteristiche effettivamente distinte.
